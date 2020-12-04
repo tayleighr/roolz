@@ -1,0 +1,43 @@
+[package]
+name = "roolz"
+version = "0.1.0"
+authors = ["Taylor Leighton Roozen <tayleighroo@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+    # framework
+    actix-web = "1.0.5"
+
+    # db ORM
+    diesel = { version = "1.0.0", features = ["postgres", "r2d2", "chrono", "uuid", "serde_json"] }
+
+    # used for managing connection pool
+    lazy_static = "1.4.0"
+
+    # formating of db timestamps
+    chrono = { version = "0.4", features = ["serde"] }
+
+    #uuid type
+    uuid = { version = "^0.6.0", features = ["serde", "v4"] }
+
+    # logging
+    log = "0.4.8"
+    env_logger = "0.7.1"
+
+    # async promises
+    futures = "0.1"
+
+    # serialization of data
+    serde = "1.0"
+    serde_derive = "1.0"
+    serde_json = "1.0"
+
+    # environment config
+    dotenv = "0.9.0"
+
+    listenfd = "0.3"
+
+    # CORS config
+    actix-cors = "0.1.0"
