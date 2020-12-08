@@ -1,7 +1,9 @@
 pub use actix_web::{ web, Responder};
 use super::error::*;
 
-// defining and creating error types for model
+
+// --- definition --- //
+
 
 include_error_types! {
     UnprocessableEntity,

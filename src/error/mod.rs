@@ -3,6 +3,10 @@ pub use std::fmt;
 pub use super::roolz_error;
 pub use super::include_error_types;
 
+
+// --- definition --- //
+
+
 pub trait RoolzError {
     fn status_code(&self) -> Option<StatusCode>;
 }

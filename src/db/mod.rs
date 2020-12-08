@@ -9,6 +9,10 @@ use diesel::{
 
 pub use diesel::pg::Pg as db_type;
 
+
+// --- definition --- //
+
+
 pub fn db() -> DBPooledConnection {
     HANDLER.db_connection.get().
         expect(&format!("Error connecting to {}", db_url()))

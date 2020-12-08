@@ -1,7 +1,6 @@
 // private imports
 use super::error::*;
 
-//public imports
 // common libraries
 pub use serde::{ Serialize, Deserialize };
 pub use super::diesel::{
@@ -9,8 +8,12 @@ pub use super::diesel::{
     prelude::*,
     dsl::*
 };
-// roolz
+
 pub use super::db::db;
+
+
+// --- definition --- //
+
 
 // result type
 pub type RecordResult<T> = std::result::Result<T, self::Error>;
@@ -129,7 +132,7 @@ macro_rules! crud_methods {
 // composes pub struct Model for representations of the data coming out of the db table
 #[macro_export]
 macro_rules! table_model {
-    // the final composition of the Model struct
+// the final composition of the Model struct
     (
         @munch [] -> {
             $( #[ $meta_variables:meta ] )* $table:literal $( + $column_name:ident: $type:ty )*
@@ -139,25 +142,25 @@ macro_rules! table_model {
         $( #[ $meta_variables ] )*
         #[table_name=$table]
         pub struct Model {
-            $($column_name: $type), *
+            $( $column_name: $type ), *
         }
     };
 
-    // the case where no proxies are provided, and this is the final column to process
+// the case where no proxies are provided, and this is the final column to process
     (
         @munch [ $column_name:ident: $type:ty ] -> { $( $output:tt )* }
     ) => {
         table_model!( @munch [] -> { $( $output )* + $column_name: $type } );
     };
 
-    // the case where no proxies are provided, and there are more columns to process
+// the case where no proxies are provided, and there are more columns to process
     (
         @munch [ $column_name:ident: $type:ty, $( $more_attributes:tt )* ] -> { $( $output:tt )* }
     ) => {
         table_model!( @munch [ $( $more_attributes )* ] -> { $( $output )* + $column_name: $type } );
     };
 
-    // the entry point for outside calls
+// the entry point for outside calls
     (
         $( #[ $meta_variables:meta ] )* $table:literal { $( $input:tt )* }
     ) => {
@@ -171,7 +174,7 @@ macro_rules! table_model {
 // optional fields, used for db queries and inserts
 #[macro_export]
 macro_rules! model_proxy {
-    // the final composition of the Model struct
+// the final composition of the Model struct
     (
         @munch [] -> {
             $table:literal $( + $column_name:ident: $type:ty )*
@@ -184,35 +187,35 @@ macro_rules! model_proxy {
         }
     };
 
-    // the case where no proxies are provided, and this is the final column to process
+// the case where no proxies are provided, and this is the final column to process
     (
         @munch [ $column_name:ident: Option< $type:ty > ] -> { $( $output:tt )* }
     ) => {
         model_proxy!( @munch [] -> { $( $output )* + $column_name: $type } );
     };
 
-    // the case where no proxies are provided, and this is the final column to process
+// the case where no proxies are provided, and this is the final column to process
     (
         @munch [ $column_name:ident: $type:ty ] -> { $( $output:tt )* }
     ) => {
         model_proxy!( @munch [] -> { $( $output )* + $column_name: $type } );
     };
 
-    // the case where no proxies are provided, and there are more columns to process
+// the case where no proxies are provided, and there are more columns to process
     (
         @munch [ $column_name:ident: Option< $type:ty, $( $more_attributes:tt )* ] -> { $( $output:tt )* }
     ) => {
         model_proxy!( @munch [ $( $more_attributes )* ] -> { $( $output )* + $column_name: $type } );
     };
 
-    // the case where no proxies are provided, and there are more columns to process
+// the case where no proxies are provided, and there are more columns to process
     (
         @munch [ $column_name:ident: $type:ty, $( $more_attributes:tt )* ] -> { $( $output:tt )* }
     ) => {
         model_proxy!( @munch [ $( $more_attributes )* ] -> { $( $output )* + $column_name: $type } );
     };
 
-    // the entry point for outside calls
+// the entry point for outside calls
     (
         $table:literal { $( $input:tt )* }
     ) => {
