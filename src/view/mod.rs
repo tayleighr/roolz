@@ -4,7 +4,19 @@ pub use serde_json::{ json };
 pub use serde::{ Serialize };
 pub use actix_web::http::StatusCode;
 
-pub use super::error::RoolzError;
+pub use crate::error::RoolzError;
+
+pub use crate::views;
+
+// use views module and it's dependencies
+#[macro_export]
+macro_rules! views {
+    ( $( $view:ident )* ) => {
+        pub use roolz::view::*;
+        pub use crate::models;
+        $( pub mod $view ;)*
+    }
+}
 
 #[derive(Serialize)]
 pub struct JsonResponse {

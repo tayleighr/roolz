@@ -1,14 +1,11 @@
+#[macro_use] extern crate quote;
 extern crate proc_macro;
-#[macro_use]
-extern crate quote;
 extern crate syn;
 
-use proc_macro::{ TokenStream };
-use proc_macro2;
 use syn::{parse_macro_input, parenthesized, braced, Path, LitStr, Ident, token};
 use syn::parse::{Parse, ParseStream, Result};
-// use syn::spanned::Spanned; -> this is used to mark the part of the stream that the person beefed up in the
-// compiler errors / warnings / info
+use proc_macro::TokenStream;
+use proc_macro2;
 
 struct RouteTree {
     scopes: Vec<Scope>
@@ -90,7 +87,7 @@ fn parse_scope(path: LitStr, stream: ParseStream) -> Result<Scope> {
 }
 
 #[proc_macro]
-pub fn routes(input: TokenStream) -> TokenStream {
+pub fn build_routes(input: TokenStream) -> TokenStream {
     let root: RouteTree = parse_macro_input!(input as RouteTree);
     let method_chain: proc_macro2::TokenStream = build_method_chain(root.scopes);
 
@@ -127,7 +124,7 @@ fn build_scope_chain(scope: &Scope) -> proc_macro2::TokenStream {
         method_chain.push( build_resource_call( resource ) )
     }
 
-    quote!{ .service( web::scope( #path ) #( #method_chain )*) }
+    quote!{ .service( actix_web::web::scope( #path ) #( #method_chain )*) }
 }
 
 fn build_resource_call(resource: &Resource) -> proc_macro2::TokenStream {
@@ -135,5 +132,5 @@ fn build_resource_call(resource: &Resource) -> proc_macro2::TokenStream {
     let method = &resource.method;
     let action = &resource.action;
 
-    quote!{ .route( #path, web::#method().to( #action ) ) }
+    quote!{ .route( #path, actix_web::web::#method().to( #action ) ) }
 }

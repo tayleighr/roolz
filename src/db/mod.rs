@@ -10,7 +10,6 @@ use diesel::{
 pub use diesel::pg::Pg as db_type;
 
 
-// --- definition --- //
 
 
 pub fn db() -> DBPooledConnection {
@@ -27,7 +26,8 @@ struct Handler {
 
 lazy_static! {
     static ref HANDLER: Handler = {
-        Handler { db_connection:
+        Handler {
+            db_connection:
             DBPool::builder().
             max_size(db_pool()).
             build(ConnectionManager::new(db_url())).

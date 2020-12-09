@@ -1,10 +1,7 @@
 pub use actix_web::{ http::StatusCode };
 pub use std::fmt;
-pub use super::roolz_error;
-pub use super::include_error_types;
-
-
-// --- definition --- //
+pub use crate::roolz_error;
+pub use crate::include_error_types;
 
 
 pub trait RoolzError {

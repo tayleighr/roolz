@@ -2,8 +2,15 @@ pub use actix_web::{ web, Responder};
 use super::error::*;
 
 
-// --- definition --- //
-
+#[macro_export]
+macro_rules! controllers {
+    ( $( $controller:ident )* ) => {
+        pub use roolz::controller::*;
+        pub use crate::models;
+        pub use crate::views;
+        $( pub mod $controller ;)*
+    }
+}
 
 include_error_types! {
     UnprocessableEntity,
