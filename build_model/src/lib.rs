@@ -13,7 +13,7 @@ use syn::{
 };
 
 #[proc_macro_attribute]
-pub fn model(_attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn table_model(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let model: Item = syn::parse(item).expect("failed to parse model struct");
 
     match model {

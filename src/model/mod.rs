@@ -1,4 +1,4 @@
-pub use build_model::model;
+pub use build_model::table_model;
 pub use crate::db::db;
 pub use serde::{ Serialize, Deserialize };
 pub use crate::diesel::{
