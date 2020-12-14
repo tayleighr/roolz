@@ -58,7 +58,7 @@ fn build_model(model: &ItemStruct, parsed_model: &Item) -> proc_macro2::TokenStr
     };
 
     quote!{
-        #[derive(Eq, PartialEq, Debug, Queryable, Serialize, AsChangeset)]
+        #[derive(Identifiable, Eq, PartialEq, Debug, Queryable, Serialize, AsChangeset)]
         #( #attributes )*
         #[table_name=#table]
         pub struct Model {
@@ -69,6 +69,7 @@ fn build_model(model: &ItemStruct, parsed_model: &Item) -> proc_macro2::TokenStr
 
 fn build_proxy(model: &ItemStruct, parsed_model: &Item) -> proc_macro2::TokenStream {
     let table = &model.ident.to_string();
+    let attributes: &Vec<Attribute> = &model.attrs;
 
     let mut tokenized_fields: Vec<proc_macro2::TokenStream> = Vec::new();
 
@@ -84,7 +85,8 @@ fn build_proxy(model: &ItemStruct, parsed_model: &Item) -> proc_macro2::TokenStr
     };
 
     quote!{
-        #[derive(Insertable, Deserialize, AsChangeset, Debug)]
+        #[derive(Identifiable, Insertable, Deserialize, AsChangeset, Debug, Clone)]
+        #( #attributes )*
         #[table_name=#table]
         pub struct Proxy {
             #( #tokenized_fields )*
@@ -109,22 +111,24 @@ fn build_boxed_query(table: &Ident) -> proc_macro2::TokenStream {
 
 fn build_crud_methods(table: &Ident) -> proc_macro2::TokenStream {
     quote! {
-        pub fn create(proxy: &mut Proxy) -> RecordResult<Model> {
-
-            match diesel::insert_into(#table).values(&*proxy).get_result(&db()) {
-                Ok(record) => Ok(record),
-                Err(e) => Err(Error::from(e))
-            }
-        }
-
-        pub fn update(pkey: i32, proxy: &mut Proxy) -> RecordResult<Model> {
-            if record_exists(pkey) {
-                match diesel::update(#table.find(pkey)).set(&*proxy).get_result(&db()) {
+        impl Proxy {
+            pub fn create(&mut self) -> RecordResult<Model> {
+                self.id = None;
+                match diesel::insert_into(#table).values(&*self).get_result(&db()) {
                     Ok(record) => Ok(record),
                     Err(e) => Err(Error::from(e))
                 }
-            } else {
-                Err(Error::from( not_found("No record exists for this ID") ))
+            }
+
+            pub fn update(&mut self) -> RecordResult<Model> {
+                if self.id.is_some() && record_exists(self.id.unwrap()) {
+                    match diesel::update(#table.find(self.id.unwrap())).set(&*self).get_result(&db()) {
+                        Ok(record) => Ok(record),
+                        Err(e) => Err(Error::from(e))
+                    }
+                } else {
+                    Err(Error::from( not_found("No record exists for this ID") ))
+                }
             }
         }
 

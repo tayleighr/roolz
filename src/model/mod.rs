@@ -19,12 +19,14 @@ macro_rules! models {
 
 // result type
 pub type RecordResult<T> = std::result::Result<T, self::Error>;
+pub type RecordsResult<T> = std::result::Result<Vec<T>, self::Error>;
 
 // defining and creating error types for model
 
 include_error_types! {
     NotFound,
-    Conflict
+    Conflict,
+    UnprocessableEntity
 }
 
 roolz_error! {
@@ -32,16 +34,20 @@ roolz_error! {
         DBConflict(diesel::result::Error, StatusCode::CONFLICT),
         DBConnection(diesel::result::ConnectionError, StatusCode::SERVICE_UNAVAILABLE),
         NotFound(NotFound, StatusCode::NOT_FOUND),
-        Conflict(Conflict, StatusCode::CONFLICT)
+        Conflict(Conflict, StatusCode::CONFLICT),
+        UnprocessableEntity(UnprocessableEntity, StatusCode::UNPROCESSABLE_ENTITY)
     }
 }
 
-pub fn not_found(message: &'static str) -> self::NotFound {
-    let e: self::NotFound = self::NotFound{ message: message, status_code: Some(StatusCode::NOT_FOUND) };
-    e
+pub fn not_found(message: &'static str) -> Error {
+    Error::from(self::NotFound{ message: message, status_code: Some(StatusCode::NOT_FOUND) })
 }
 
-pub fn conflict(message: &'static str) -> self::Conflict {
-    let e: self::Conflict = self::Conflict{message: message, status_code: Some(StatusCode::CONFLICT)};
-    e
+pub fn conflict(message: &'static str) -> Error {
+    Error::from(self::Conflict{message: message, status_code: Some(StatusCode::CONFLICT)})
+}
+
+pub fn unprocessable_entity(message: &'static str) -> Error {
+    Error::from(self::UnprocessableEntity{message: message, status_code: Some(StatusCode::UNPROCESSABLE_ENTITY)})
+
 }

@@ -1,3 +1,4 @@
+pub use serde::{ Serialize, Deserialize };
 pub use actix_web::{ web, Responder};
 use super::error::*;
 
