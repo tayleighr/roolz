@@ -20,12 +20,6 @@ edition = "2018"
     # used for managing connection pool
     lazy_static = "1.4.0"
 
-    # formating of db timestamps
-    chrono = { version = "0.4", features = ["serde"] }
-
-    #uuid type
-    uuid = { version = "^0.6.0", features = ["serde", "v4"] }
-
     # logging
     log = "0.4.8"
     env_logger = "0.7.1"

@@ -58,7 +58,7 @@ fn build_model(model: &ItemStruct, parsed_model: &Item) -> proc_macro2::TokenStr
     };
 
     quote!{
-        #[derive(Identifiable, Eq, PartialEq, Debug, Queryable, Serialize, AsChangeset)]
+        #[derive(Identifiable, Eq, PartialEq, Debug, Queryable, QueryableByName, Serialize, AsChangeset)]
         #( #attributes )*
         #[table_name=#table]
         pub struct Model {
