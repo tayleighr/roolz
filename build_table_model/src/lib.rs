@@ -76,12 +76,16 @@ fn build_proxy(model: &ItemStruct, parsed_model: &Item) -> proc_macro2::TokenStr
     match model.fields {
         Fields::Named(ref fields) => {
             for field in &fields.named {
-                let typ = extract_type_from_option(&field.ty, &parsed_model).unwrap();
-                let name = &field.ident;
-                tokenized_fields.push( quote! { #name : Option<#typ>, } );
+                if let Ok(typ) = extract_type_from_option(&field.ty, &parsed_model) {
+                    let name = &field.ident;
+                    tokenized_fields.push( quote! { #name : Option<#typ>, } );
+                } else {
+                    parsed_model.span().unstable().error("Failed to parse struct types").emit()
+                }
+
             }
         },
-        _ => { parsed_model.span().unstable().error("The struct must contain only named fields").emit() }
+        _ => { parsed_model.span().unstable().error("The struct must contain named fields").emit() }
     };
 
     quote!{
@@ -112,41 +116,45 @@ fn build_boxed_query(table: &Ident) -> proc_macro2::TokenStream {
 fn build_crud_methods(table: &Ident) -> proc_macro2::TokenStream {
     quote! {
         impl Proxy {
-            pub fn create(&mut self) -> RecordResult<Model> {
+            pub fn create(&mut self) -> AppResult<Model> {
                 self.id = None;
                 match diesel::insert_into(#table).values(&*self).get_result(&db()) {
                     Ok(record) => Ok(record),
-                    Err(e) => Err(Error::from(e))
+                    Err(e) => Err(AppError::from(e))
                 }
             }
 
-            pub fn update(&mut self) -> RecordResult<Model> {
-                if self.id.is_some() && record_exists(self.id.unwrap()) {
-                    match diesel::update(#table.find(self.id.unwrap())).set(&*self).get_result(&db()) {
-                        Ok(record) => Ok(record),
-                        Err(e) => Err(Error::from(e))
+            pub fn update(&mut self) -> AppResult<Model> {
+                if let Some(i_d) = self.id {
+                    if record_exists(i_d) {
+                        match diesel::update(#table.find(i_d)).set(&*self).get_result(&db()) {
+                            Ok(record) => Ok(record),
+                            Err(e) => Err(AppError::from(e))
+                        }
+                    } else {
+                        Err(AppError::from( not_found("No record exists for this ID") ))
                     }
                 } else {
-                    Err(Error::from( not_found("No record exists for this ID") ))
+                    Err(AppError::from( not_found("No ID provided for update") ))
                 }
             }
         }
 
-        pub fn find(pkey: i32) -> RecordResult<Model> {
+        pub fn find(pkey: i32) -> AppResult<Model> {
             match #table.find(pkey).get_result(&db()) {
                 Ok(model) => Ok(model),
-                Err(_e) => Err(Error::from( not_found("No record exists for this ID") ))
+                Err(_e) => Err(AppError::from( not_found("No record exists for this ID") ))
             }
         }
 
-        pub fn delete(pkey: i32) -> RecordResult<Model> {
+        pub fn delete(pkey: i32) -> AppResult<Model> {
             if record_exists(pkey) {
                 match diesel::delete(#table.find(pkey)).get_result(&db()) {
                     Ok(model) => Ok(model),
-                    Err(_e) => Err(Error::from( not_found("No record exists for this ID") ))
+                    Err(_e) => Err(AppError::from( not_found("No record exists for this ID") ))
                 }
             } else {
-                Err(Error::from( not_found("No record exists for this ID") ))
+                Err(AppError::from( not_found("No record exists for this ID") ))
             }
 
         }

@@ -1,11 +1,29 @@
+#![feature(proc_macro_diagnostic)]
 #[macro_use] extern crate quote;
 extern crate proc_macro;
 extern crate syn;
 
-use syn::{parse_macro_input, parenthesized, braced, Path, LitStr, Ident, token};
-use syn::parse::{Parse, ParseStream, Result};
-use proc_macro::TokenStream;
-use proc_macro2;
+use {
+    syn::{parse_macro_input, parenthesized, braced, Path, LitStr, Ident, token},
+    syn::parse::{Parse, ParseStream, Result},
+    proc_macro::TokenStream,
+    proc_macro2
+};
+
+#[proc_macro]
+pub fn build_routes(input: TokenStream) -> TokenStream {
+    let root: RouteTree = parse_macro_input!(input as RouteTree);
+    let method_chain: proc_macro2::TokenStream = build_method_chain(root.scopes);
+
+    let expanded = quote!{
+        pub fn routes(config: &mut web::ServiceConfig) {
+            config #method_chain;
+
+        }
+
+    };
+    TokenStream::from(expanded)
+}
 
 struct RouteTree {
     scopes: Vec<Scope>
@@ -34,7 +52,11 @@ impl Parse for RouteTree {
             parenthesized!( path_stream in stream );
             braced!(within_scope in stream);
             let path: LitStr = path_stream.parse()?;
-            scopes.push( parse_scope(path, &within_scope).unwrap() );
+            if let Ok(scp) = parse_scope(path, &within_scope) {
+                scopes.push( scp );
+            } else {
+                within_scope.span().unstable().error("The the scope is malformatted here").emit()
+            }
         }
 
         Ok(
@@ -60,7 +82,13 @@ fn parse_scope(path: LitStr, stream: ParseStream) -> Result<Scope> {
             parenthesized!( path_stream in stream );
             braced!(within_scope in stream);
             path = path_stream.parse()?;
-            scopes.push( parse_scope(path, &within_scope).unwrap() );
+
+            if let Ok(scp) = parse_scope(path, &within_scope) {
+                scopes.push( scp);
+            } else {
+                within_scope.span().unstable().error("The the scope is malformatted here").emit()
+            }
+
         } else {
             let method: Ident = stream.parse()?;
             path = stream.parse()?;
@@ -84,21 +112,6 @@ fn parse_scope(path: LitStr, stream: ParseStream) -> Result<Scope> {
             resources
         }
     )
-}
-
-#[proc_macro]
-pub fn build_routes(input: TokenStream) -> TokenStream {
-    let root: RouteTree = parse_macro_input!(input as RouteTree);
-    let method_chain: proc_macro2::TokenStream = build_method_chain(root.scopes);
-
-    let expanded = quote!{
-        pub fn routes(config: &mut web::ServiceConfig) {
-            config #method_chain;
-
-        }
-
-    };
-    TokenStream::from(expanded)
 }
 
 fn build_method_chain(scopes: Vec<Scope>) -> proc_macro2::TokenStream {

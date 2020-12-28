@@ -1,5 +1,5 @@
 [package]
-name = "build_model"
+name = "build_table_model"
 version = "0.1.0"
 authors = ["Taylor Leighton Roozen <tayleighroo@gmail.com>"]
 edition = "2018"

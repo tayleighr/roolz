@@ -4,7 +4,7 @@ pub use serde_json::{ json };
 pub use serde::{ Serialize };
 pub use actix_web::http::StatusCode;
 
-pub use crate::error::RoolzError;
+pub use crate::error::AppError;
 
 pub use crate::views;
 
@@ -13,7 +13,7 @@ pub use crate::views;
 macro_rules! views {
     ( $( $view:ident )* ) => {
         pub use roolz::view::*;
-        pub use crate::models;
+        pub use crate::table_models;
         $( pub mod $view ;)*
     }
 }
@@ -44,5 +44,37 @@ impl Responder for JsonResponse {
 
                 body(self.body)
         )
+    }
+}
+
+pub fn success(message: &str) -> JsonResponse {
+    JsonResponse {
+        body: json!(
+			{
+				"status": "success",
+				"message": message.to_string()
+			}
+		),
+        status_code: StatusCode::OK
+    }
+}
+
+pub fn none() -> JsonResponse {
+    JsonResponse{
+        body: json!({}),
+        status_code: StatusCode::OK
+    }
+}
+
+pub fn error(e: AppError) -> JsonResponse {
+
+    JsonResponse {
+        body: json!(
+			{
+				"status": "error",
+				"message": format!("{}", e)
+			}
+		),
+        status_code: e.code
     }
 }

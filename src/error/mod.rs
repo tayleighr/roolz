@@ -1,108 +1,65 @@
-pub use actix_web::{ http::StatusCode };
+pub use actix_web::http::StatusCode as StatusCode;
 pub use std::fmt;
-pub use crate::roolz_error;
-pub use crate::include_error_types;
+pub use register_errors::register_errors as register_errors;
 
-
-pub trait RoolzError {
-    fn status_code(&self) -> Option<StatusCode>;
+#[derive(Debug)]
+pub struct AppError {
+    pub code: StatusCode,
+    pub kind: Option<String>,
+    pub message: String
 }
 
-// pub struct ApplicationError<T>(pub T); COULD BE GOOD WAY TO IMPLEMENT COMMON ERROR BEHAVIOR FROM DIFFERENT TYPES
-#[macro_export]
-macro_rules! include_error_types {
-    {
-        $(
-            $( #[$meta:meta] )*
-            $ErrorName:ident
-        ),+ $(,)?
-    } => {
-        $(
-            $(#[$meta])*
-            #[derive(Debug)]
-            pub struct $ErrorName {
-                pub message: &'static str,
-                pub status_code: Option<StatusCode>
-            }
-
-            impl fmt::Display for $ErrorName {
-                fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                        write!(f, "{}", self.message)
-                    }
-            }
-
-            impl std::error::Error for $ErrorName {
-                fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-                    None
-                }
-            }
-
-            impl RoolzError for $ErrorName {
-                fn status_code(&self) -> Option<StatusCode> {
-                    self.status_code
-                }
-            }
-        )?
+impl AppError {
+    pub fn new(code: StatusCode, message: String, kind: Option<String>) -> Self {
+        AppError {
+            code,
+            kind,
+            message
+        }
+    }
+}
+impl std::error::Error for AppError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        None
     }
 }
 
-#[macro_export]
-macro_rules! roolz_error {
-    {
-        $( #[$meta:meta] )*
-        $pub:vis enum $ErrorName:ident {
-            $(
-                $Variant:ident( $TYPE:ty, $STATUS_ERROR:expr )
-            ),+ $(,)?
-        }
+impl fmt::Display for AppError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "code: {:?} -- kind: {:?} -- message: {:?}",
+            &self.code.to_string(),
+            &self.kind.as_ref().unwrap_or(&String::from("")),
+            &self.message
+        )
+    }
+}
 
-    } => {
+// result type
+pub type AppResult<T> = std::result::Result<T, AppError>;
+pub type AppResults<T> = std::result::Result<Vec<T>, AppError>;
 
-        $(#[$meta])*
-        #[derive(Debug)]
-        $pub enum $ErrorName {
-            $(
-                $Variant($TYPE),
-            )*
-        }
+pub fn not_found(message: &'static str) -> AppError {
+    AppError {
+        code: actix_web::http::StatusCode::NOT_FOUND,
+        message: message.to_string(),
+        kind: None
+    }
+}
 
-        $(
-            impl From<$TYPE> for $ErrorName {
-                fn from(e: $TYPE) -> $ErrorName {
-                    $ErrorName::$Variant(e)
-                }
-            }
-        )?
+pub fn conflict(message: &'static str) -> AppError {
+    AppError {
+        code: actix_web::http::StatusCode::CONFLICT,
+        message: message.to_string(),
+        kind: None
+    }
+}
 
-        impl fmt::Display for $ErrorName {
-            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                match *self {
-                    $(
-                        $ErrorName::$Variant( ref e  ) => e.fmt(f),
-                    )?
-                }
-            }
-        }
-
-        impl std::error::Error for $ErrorName {
-            fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-                match *self {
-                    $(
-                        $ErrorName::$Variant( ref e  ) => Some(e), //come back to here to make this some for not
-                    )?
-                }
-            }
-        }
-
-        impl crate::error::RoolzError for $ErrorName {
-            fn status_code(&self) -> Option<StatusCode> {
-                match *self {
-                    $(
-                        $ErrorName::$Variant( ref _e  ) => Some($STATUS_ERROR),
-                    )?
-                }
-            }
-        }
-
+pub fn unprocessable_entity(message: &'static str) -> AppError {
+    AppError {
+        code: actix_web::http::StatusCode::UNPROCESSABLE_ENTITY,
+        message: message.to_string(),
+        kind: None
     }
 }

@@ -8,8 +8,9 @@ edition = "2018"
 
 [dependencies]
     #internal proc macros
-    build_routes = {path = "build_routes"}
-    build_model = {path = "build_model"}
+    build_routes = { path = "build_routes" }
+    build_table_model = { path = "build_table_model" }
+    register_errors = { path = "register_errors" }
 
     # framework
     actix-web = "1.0.5"
