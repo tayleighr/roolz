@@ -17,9 +17,9 @@ struct NewError<'a> {
 }
 #[derive(Clone)]
 struct Variant<'a> {
-    kind: &'a Ident,
+    name: &'a Ident,
     source: &'a Type,
-    code: &'a Type
+    code: Option<&'a Type>
 }
 
 #[proc_macro_attribute]
@@ -46,14 +46,13 @@ pub fn register_errors(_attr: TokenStream, input: TokenStream) -> TokenStream {
                 #from_impls
             };
 
-            let tk = TokenStream::from(expanded);
-//            print!{"{:?}\n", &tk.to_string()}
-            return tk
+            return TokenStream::from(expanded);
 
         },
         _ => parsed_error_enum.span().unstable().error("This is not an enum").emit()
     };
 
+    parsed_error_enum.span().unstable().error("Failed to parse error enum").emit();
     TokenStream::new()
 }
 
@@ -64,7 +63,7 @@ fn reformatted_error_enum(new_error: &NewError) -> proc_macro2::TokenStream {
     let mut variants: Vec<proc_macro2::TokenStream> = Vec::new();
 
     for variant in &new_error.variants {
-        let kind = variant.kind;
+        let kind = variant.name;
         let source = variant.source;
         variants.push(
             quote!{
@@ -84,17 +83,20 @@ fn impl_new_error_display(new_error: &NewError ) -> proc_macro2::TokenStream {
 
     let mut match_statements: Vec<proc_macro2::TokenStream> = Vec::new();
 
-    let kind = &new_error.name;
+    let name = &new_error.name;
 
     for variant in &new_error.variants {
-        let variant_kind = variant.kind;
+        let kind = variant.name;
+        let kind_string = &kind.to_string();
         match_statements.push(
-            quote!{ #kind::#variant_kind( ref e  ) => e.fmt(f), }
+            quote!{
+                #name::#kind( ref e ) => write!(f, "{:}", #kind_string),
+            }
         )
     }
 
     quote!{
-        impl std::fmt::Display for #kind {
+        impl std::fmt::Display for #name {
             fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
                 match *self {
                     #( #match_statements )*
@@ -104,28 +106,52 @@ fn impl_new_error_display(new_error: &NewError ) -> proc_macro2::TokenStream {
     }
 }
 
+//fn code<U, T: AppErrorStatus + std::convert::From<U> >(&self, error: U) -> StatusCode;
+
+//fn impl_app_error_status(new_error: &NewError)  -> proc_macro2::TokenStream {
+//    let name = &new_error.name;
+//
+//    let body = if let Some(code) = &new_error.code {
+//        quote!{#code}
+//    } else {
+//        quote!{
+//            let converter = T::from(error);
+//                converter.code();
+//        }
+//    };
+//
+//    quote! {
+//        impl AppErrorStatus for #name {
+//            fn code<U, T>(&self, error: U) -> actix_web::http::StatusCode
+//            where T: AppErrorStatus + std::convert::From<U> {
+//                #body
+//            }
+//        }
+//    }
+//}
+
 fn impl_app_error_from(new_error: &NewError) -> proc_macro2::TokenStream {
-    let kind = &new_error.name;
+    let name = &new_error.name;
 
     let mut match_statements: Vec<proc_macro2::TokenStream> = Vec::new();
 
     for variant in &new_error.variants {
-        let variant_kind = variant.kind;
+        let kind = variant.name;
         let variant_code = variant.code;
 
         match_statements.push(
-            quote!{ #kind::#variant_kind(_) => #variant_code, }
+            quote!{ #name::#kind(ref e) => #variant_code, }
         )
     }
 
-    let kind_string = format!("{:?}", kind);
+    let name_string = name.to_string();
 
     quote!{
-        impl From<#kind> for AppError {
-            fn from(error: #kind) -> Self {
-                let source_kind = match error.source() {
-                    Some(e) => Some(e.to_string()),
-                    _=> None
+        impl std::convert::From<#name> for AppError {
+            fn from(error: #name) -> Self {
+                let message = match error.source() {
+                    Some(e) => e.to_string(),
+                    _=> String::from("")
                 };
 
                 let code = match error {
@@ -134,9 +160,9 @@ fn impl_app_error_from(new_error: &NewError) -> proc_macro2::TokenStream {
 
                 AppError {
                     code,
-                    source_kind,
-                    kind: Some(#kind_string),
-                    message: error.to_string(),
+                    message,
+                    kind: Some(#name_string.to_string()),
+                    source: Some(error.to_string()),
                 }
             }
         }
@@ -144,61 +170,23 @@ fn impl_app_error_from(new_error: &NewError) -> proc_macro2::TokenStream {
     }
 }
 
-//fn impl_new_error_from_app_error(new_error: &NewError) -> proc_macro2::TokenStream {
-//    let kind = &new_error.name;
-//
-//    let mut match_statements: Vec<proc_macro2::TokenStream> = Vec::new();
-//
-//    for variant in &new_error.variants {
-//        let variant_kind = variant.kind;
-//        let variant_code = variant.code;
-//
-//        match_statements.push(
-//            quote!{ #kind::#variant_kind(_) => #variant_code, }
-//        )
-//    }
-//
-//    quote!{
-//        impl From<AppError> for #kind {
-//            fn from(error: AppError) -> Self {
-//                let source_kind = match error.source() {
-//                    Some(e) => Some(e.to_string()),
-//                    _=> None
-//                };
-//
-//                let code = match error {
-//                    #( #match_statements )*
-//                };
-//
-//                AppError {
-//                    code,
-//                    source_kind,
-//                    kind: Some(String::from("#kind")),
-//                    message: error.to_string(),
-//                }
-//            }
-//        }
-//
-//    }
-//}
-
 fn impl_std_error(new_error: &NewError) -> proc_macro2::TokenStream {
 
     let mut match_statements: Vec<proc_macro2::TokenStream> = Vec::new();
 
-    let kind = &new_error.name;
+    let name = &new_error.name;
 
     for variant in &new_error.variants {
-        let variant_kind = variant.kind;
+        let kind = variant.name;
         match_statements.push(
-            quote!{ #kind::#variant_kind( ref e  ) => Some(e), }
+            quote!{ #name::#kind( ref e  ) => Some(e), }
         )
     }
 
     quote!{
         use std::error::Error;
 
-        impl std::error::Error for #kind {
+        impl std::error::Error for #name {
             fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
                 match *self {
                     #( #match_statements )*
@@ -215,21 +203,14 @@ fn impl_from_variants(new_error: &NewError) -> proc_macro2::TokenStream {
     let mut tokenized_impls: Vec<proc_macro2::TokenStream> = Vec::new();
 
     for variant in variants {
-        let kind = variant.kind;
-        let code = variant.code;
+        let kind = variant.name;
         let source = variant.source;
         tokenized_impls.push(
             quote!{
-                impl From<#source> for #name {
+                impl std::convert::From<#source> for #name {
                     fn from(e: #source) -> #name {
-                            #name::#kind(e)
+                        #name::#kind(e)
 
-//                        AppError{
-//                            source_kind: Some(String::from("#source")),
-//                            code: #code,
-//                            kind: Some(String::from("#kind")),
-//                            message: error.to_string(),
-//                        }
                     }
                 }
 
@@ -246,10 +227,10 @@ fn parse_variants<'a>(error_enum: &'a ItemEnum, parsed_context: &'a Item) -> Vec
     let mut variants: Vec<Variant<'a>> = Vec::new();
 
     for variant in &error_enum.variants {
-        let kind = &variant.ident;
+        let name = &variant.ident;
         if let Some((source, code)) = parse_fields(variant, parsed_context){
             variants.push(
-                Variant{ kind, source, code }
+                Variant{ name, source, code }
             )
         }
     }
@@ -257,18 +238,22 @@ fn parse_variants<'a>(error_enum: &'a ItemEnum, parsed_context: &'a Item) -> Vec
     variants
 }
 
-fn parse_fields<'a>(variant: &'a syn::Variant, parsed_context: &'a Item) -> Option<(&'a Type, &'a Type)> {
+fn parse_fields<'a>(variant: &'a syn::Variant, parsed_context: &'a Item) -> Option<(&'a Type, Option<&'a Type>)> {
     let fields = &variant.fields;
 
     match fields {
         Fields::Unnamed(ref named_fields) => {
             let mut pairs = named_fields.unnamed.pairs();
-            if pairs.len() == 2 {
+            if pairs.len() > 0 {
                 let source_field = &pairs.next().unwrap().value().ty;
-                let code_field = &pairs.next().unwrap().value().ty;
+                let code_field = if let Some(code_pair) = &pairs.next() {
+                    Some(&code_pair.value().ty)
+                } else {
+                    None
+                };
                 return Some((source_field, code_field));
             } else {
-                parsed_context.span().unstable().error("Each variant must define an error type and a StatusCode").emit()
+                parsed_context.span().unstable().error("Each variant must define an error type").emit()
             }
         },
         _=> parsed_context.span().unstable().error("Enum fields must be unnamed").emit()
