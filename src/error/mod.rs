@@ -10,9 +10,13 @@ pub struct AppError {
     pub message: String
 }
 
-trait AppErrorStatus {
-    fn code<U, T>(&self, error: U) -> StatusCode
-    where T: AppErrorStatus + std::convert::From<U>;
+//pub trait AppErrorStatus<T> {
+//    fn code<U>(&self, error: U) -> StatusCode
+//    where T: AppErrorStatus<U> + std::convert::From<U>;
+//}
+
+pub trait AppErrorStatus<T> {
+    fn code(&self) -> StatusCode;
 }
 
 impl AppError {

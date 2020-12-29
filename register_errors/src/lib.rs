@@ -13,6 +13,7 @@ use {
 struct NewError<'a> {
     vis: &'a Visibility,
     name: &'a Ident,
+    result_name: &'a Ident,
     variants: Vec<Variant<'a>>
 }
 #[derive(Clone)]
@@ -29,16 +30,21 @@ pub fn register_errors(_attr: TokenStream, input: TokenStream) -> TokenStream {
 
     match parsed_error_enum {
         Item::Enum(ref error_enum) => {
-
+            let name_space = &error_enum.ident;
             let variants = parse_variants(&error_enum, &parsed_error_enum);
-            let new_error = NewError {name: &error_enum.ident, variants: variants.to_vec(), vis: &error_enum.vis};
+            let error_name = proc_macro2::Ident::new(&format!("{:}{:}", name_space, "Error"), proc_macro2::Span::call_site());
+            let result_name = proc_macro2::Ident::new(&format!("{:}{:}", name_space, "Result"), proc_macro2::Span::call_site());
+            let new_error = NewError {name: &error_name, result_name: &result_name, variants: variants.to_vec(), vis: &error_enum.vis};
+
             let app_error_impl = impl_app_error_from(&new_error);
             let std_error_impl = impl_std_error(&new_error);
             let from_impls = impl_from_variants(&new_error);
-            let reformatted = reformatted_error_enum(&new_error);
+            let reformatted = format_error_and_result(&new_error);
             let display = impl_new_error_display(&new_error);
+//            let app_error_status_impls = impl_app_error_status(&new_error);
 
             let expanded = quote!{
+//                #( #app_error_status_impls )*
                 #reformatted
                 #display
                 #app_error_impl
@@ -56,10 +62,11 @@ pub fn register_errors(_attr: TokenStream, input: TokenStream) -> TokenStream {
     TokenStream::new()
 }
 
-fn reformatted_error_enum(new_error: &NewError) -> proc_macro2::TokenStream {
+fn format_error_and_result(new_error: &NewError) -> proc_macro2::TokenStream {
 
     let vis = new_error.vis;
     let name = new_error.name;
+    let result = new_error.result_name;
     let mut variants: Vec<proc_macro2::TokenStream> = Vec::new();
 
     for variant in &new_error.variants {
@@ -72,10 +79,13 @@ fn reformatted_error_enum(new_error: &NewError) -> proc_macro2::TokenStream {
         )
     }
     quote!{
+
         #[derive(Debug)]
         #vis enum #name {
             #( #variants )*
         }
+
+        pub type #result<T> = std::result::Result<T, #name>;
     }
 }
 
@@ -106,28 +116,35 @@ fn impl_new_error_display(new_error: &NewError ) -> proc_macro2::TokenStream {
     }
 }
 
-//fn code<U, T: AppErrorStatus + std::convert::From<U> >(&self, error: U) -> StatusCode;
-
-//fn impl_app_error_status(new_error: &NewError)  -> proc_macro2::TokenStream {
+//fn impl_app_error_status(new_error: &NewError)  -> Vec<proc_macro2::TokenStream> {
 //    let name = &new_error.name;
 //
-//    let body = if let Some(code) = &new_error.code {
-//        quote!{#code}
-//    } else {
-//        quote!{
-//            let converter = T::from(error);
+//    let mut a_e_s_impls: Vec<proc_macro2::TokenStream> = Vec::new();
+//    for variant in &new_error.variants {
+//        let body = if let Some(code) = &variant.code {
+//            quote!{#code}
+//        } else {
+//            quote!{
+//                let converter = #kind::from(error);
 //                converter.code();
-//        }
-//    };
-//
-//    quote! {
-//        impl AppErrorStatus for #name {
-//            fn code<U, T>(&self, error: U) -> actix_web::http::StatusCode
-//            where T: AppErrorStatus + std::convert::From<U> {
-//                #body
 //            }
-//        }
+//        };
+//
+//        let kind = variant.name;
+//
+//        a_e_s_impls.push(
+//            quote! {
+//                impl AppErrorStatus<#kind> for #name {
+//                    fn code<U>(&self, error: U) -> actix_web::http::StatusCode
+//                    where #kind: AppErrorStatus<U> + std::convert::From<U> {
+//                        #body
+//                    }
+//                }
+//            }
+//        )
 //    }
+//
+//    a_e_s_impls
 //}
 
 fn impl_app_error_from(new_error: &NewError) -> proc_macro2::TokenStream {
@@ -139,9 +156,17 @@ fn impl_app_error_from(new_error: &NewError) -> proc_macro2::TokenStream {
         let kind = variant.name;
         let variant_code = variant.code;
 
-        match_statements.push(
-            quote!{ #name::#kind(ref e) => #variant_code, }
-        )
+        if let Some(code) = variant_code {
+            match_statements.push(quote!{ #name::#kind(_) => #code, })
+        } //else {
+//            match_statements.push(
+//                quote!{
+//                    #name::#kind(ref e) => {
+//                        <#name as AppErrorStatus<#kind>::code(e);
+//                    },
+//                }
+//            )
+//        }
     }
 
     let name_string = name.to_string();

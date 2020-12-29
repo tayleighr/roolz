@@ -18,7 +18,7 @@ macro_rules! table_models {
 // defining and creating error types for model
 
 #[register_errors]
-pub enum TableModelError {
+pub enum TableModel {
     DBConflict(diesel::result::Error, StatusCode::CONFLICT),
     DBConnection(diesel::result::ConnectionError, StatusCode::SERVICE_UNAVAILABLE)
 }
