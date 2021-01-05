@@ -120,7 +120,7 @@ fn build_crud_methods(table: &Ident) -> proc_macro2::TokenStream {
                 self.id = None;
                 match diesel::insert_into(#table).values(&*self).get_result(&db()) {
                     Ok(record) => Ok(record),
-                    Err(e) => Err(AppError::from(e))
+                    Err(e) => Err( DBError::for_app(e) )
                 }
             }
 
@@ -129,13 +129,13 @@ fn build_crud_methods(table: &Ident) -> proc_macro2::TokenStream {
                     if record_exists(i_d) {
                         match diesel::update(#table.find(i_d)).set(&*self).get_result(&db()) {
                             Ok(record) => Ok(record),
-                            Err(e) => Err(AppError::from(e))
+                            Err(e) => Err( DBError::for_app(e) )
                         }
                     } else {
-                        Err(AppError::from( not_found("No record exists for this ID") ))
+                        Err( not_found("No record exists for this ID") )
                     }
                 } else {
-                    Err(AppError::from( not_found("No ID provided for update") ))
+                    Err( not_found("No ID provided for update") )
                 }
             }
         }
@@ -143,7 +143,7 @@ fn build_crud_methods(table: &Ident) -> proc_macro2::TokenStream {
         pub fn find(pkey: i32) -> AppResult<Model> {
             match #table.find(pkey).get_result(&db()) {
                 Ok(model) => Ok(model),
-                Err(_e) => Err(AppError::from( not_found("No record exists for this ID") ))
+                Err(_e) => Err( not_found("No record exists for this ID") )
             }
         }
 
@@ -151,10 +151,10 @@ fn build_crud_methods(table: &Ident) -> proc_macro2::TokenStream {
             if record_exists(pkey) {
                 match diesel::delete(#table.find(pkey)).get_result(&db()) {
                     Ok(model) => Ok(model),
-                    Err(_e) => Err(AppError::from( not_found("No record exists for this ID") ))
+                    Err(_e) => Err( not_found("No record exists for this ID") )
                 }
             } else {
-                Err(AppError::from( not_found("No record exists for this ID") ))
+                Err( not_found("No record exists for this ID") )
             }
 
         }

@@ -40,3 +40,6 @@ edition = "2018"
 
     # CORS config
     actix-cors = "0.1.0"
+
+    # resource calls
+    reqwest = { version = "0.10.0-alpha.2", features = ["blocking"] }

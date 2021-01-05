@@ -4,7 +4,7 @@ pub use serde_json::{ json };
 pub use serde::{ Serialize };
 pub use actix_web::http::StatusCode;
 
-pub use crate::error::AppError;
+pub use crate::error::{AppError, ErrorMeta};
 
 pub use crate::views;
 
@@ -13,7 +13,7 @@ pub use crate::views;
 macro_rules! views {
     ( $( $view:ident )* ) => {
         pub use roolz::view::*;
-        pub use crate::table_models;
+        pub use crate::models;
         $( pub mod $view ;)*
     }
 }
@@ -37,7 +37,7 @@ impl Responder for JsonResponse {
     type Future = Result<HttpResponse, Self::Error>;
 
     fn respond_to(self, _req: &HttpRequest) -> Self::Future {
-        info!("{:?}\n\n", self.body);
+        log::info!("{:?}\n\n", self.body);
         Ok(
             HttpResponse::build(self.status_code).
                 content_type("application/json").
@@ -67,7 +67,6 @@ pub fn none() -> JsonResponse {
 }
 
 pub fn error(e: AppError) -> JsonResponse {
-
     JsonResponse {
         body: json!(
 			{
@@ -75,6 +74,6 @@ pub fn error(e: AppError) -> JsonResponse {
 				"message": format!("{}", e)
 			}
 		),
-        status_code: e.code
+        status_code: e.code().unwrap_or(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR)
     }
 }
