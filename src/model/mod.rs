@@ -1,6 +1,6 @@
 pub use {
     serde::{ Serialize, Deserialize },
-    crate::error::*,
+    crate::error::*
 };
 
 pub mod resource_model;

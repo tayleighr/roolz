@@ -270,7 +270,7 @@ fn impl_variant_conversion(new_error: &NewError) -> proc_macro2::TokenStream {
 
                 impl roolz::error::ForApp<#source> for #name {
                     fn for_app(e: #source) -> AppError {
-                        AppError::from(#name::from(e))
+                        #name::from(e).into()
                     }
                 }
             }

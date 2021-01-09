@@ -2,6 +2,7 @@ pub use actix_web::http::StatusCode as StatusCode;
 pub use std::fmt;
 pub use register_errors::register_errors as register_errors;
 
+
 pub trait ErrorMeta: std::error::Error {
     fn code(&self) -> Option<StatusCode>;
     fn typ(&self) -> String;

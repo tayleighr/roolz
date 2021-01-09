@@ -138,12 +138,12 @@ impl std::convert::From<diesel::result::ConnectionError> for DBError {
 
 impl ForApp<diesel::result::Error> for DBError {
     fn for_app(e: diesel::result::Error) -> AppError {
-        AppError::from(Self::from(e))
+        Self::from(e).into()
     }
 }
 
 impl ForApp<diesel::result::ConnectionError> for DBError {
     fn for_app(e: diesel::result::ConnectionError) -> AppError {
-        AppError::from(Self::from(e))
+        Self::from(e).into()
     }
 }

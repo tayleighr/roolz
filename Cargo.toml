@@ -12,21 +12,19 @@ edition = "2018"
     build_table_model = { path = "build_table_model" }
     register_errors = { path = "register_errors" }
 
-    # framework
+	# framework
     actix-web = "1.0.5"
+    # CORS config
+    actix-cors = "0.1.0"
 
     # db ORM
     diesel = { version = "1.0.0", features = ["postgres", "r2d2", "chrono", "uuid", "serde_json"] }
 
-    # used for managing connection pool
     lazy_static = "1.4.0"
 
     # logging
     log = "0.4.8"
     env_logger = "0.7.1"
-
-    # async promises
-    futures = "0.1"
 
     # serialization of data
     serde = "1.0"
@@ -38,8 +36,7 @@ edition = "2018"
 
     listenfd = "0.3"
 
-    # CORS config
-    actix-cors = "0.1.0"
-
     # resource calls
     reqwest = { version = "0.10.0-alpha.2", features = ["blocking"] }
+
+    yaml-rust = "0.4.5"

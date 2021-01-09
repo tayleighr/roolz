@@ -1,4 +1,4 @@
-use actix_web::{ HttpResponse, HttpRequest, Responder };
+pub use actix_web::HttpResponse;
 
 pub use serde_json::{ json };
 pub use serde::{ Serialize };
@@ -18,62 +18,75 @@ macro_rules! views {
     }
 }
 
-#[derive(Serialize)]
-pub struct JsonResponse {
-    pub body: serde_json::Value,
+//#[derive(Serialize)]
+//pub struct JsonResponse {
+//    pub body: serde_json::Value,
+//
+//    #[serde(skip_serializing)]
+//    pub status_code: StatusCode
+//}
+//
+//impl JsonResponse {
+//    pub fn new(body: serde_json::Value) -> JsonResponse {
+//        JsonResponse { body, status_code: StatusCode::OK }
+//    }
+//}
+//
+//impl Responder for JsonResponse {
+//    type Error = actix_web::Error;
+//    type Future = Result<HttpResponse, Self::Error>;
+//
+//    fn respond_to(self, _req: &HttpRequest) -> Self::Future {
+//        log::info!("{:?}\n\n", self.body);
+//        Ok(
+//            HttpResponse::build(self.status_code).
+//                content_type("application/json").
+//
+//                body(self.body)
+//        )
+//    }
+//}
 
-    #[serde(skip_serializing)]
-    pub status_code: StatusCode
+pub fn from(body: serde_json::Value) -> HttpResponse {
+    json_response(
+        StatusCode::OK,
+        body
+    )
 }
 
-impl JsonResponse {
-    pub fn new(body: serde_json::Value) -> JsonResponse {
-        JsonResponse { body, status_code: StatusCode::OK }
-    }
+pub fn json_response(status: StatusCode, body: serde_json::Value) -> HttpResponse {
+    HttpResponse::build(status).
+        content_type("application/json").
+        body(body)
 }
 
-impl Responder for JsonResponse {
-    type Error = actix_web::Error;
-    type Future = Result<HttpResponse, Self::Error>;
-
-    fn respond_to(self, _req: &HttpRequest) -> Self::Future {
-        log::info!("{:?}\n\n", self.body);
-        Ok(
-            HttpResponse::build(self.status_code).
-                content_type("application/json").
-
-                body(self.body)
-        )
-    }
-}
-
-pub fn success(message: &str) -> JsonResponse {
-    JsonResponse {
-        body: json!(
+pub fn success(message: &str) -> HttpResponse {
+    json_response(
+        StatusCode::OK,
+        json!(
 			{
 				"status": "success",
 				"message": message.to_string()
 			}
-		),
-        status_code: StatusCode::OK
-    }
+		)
+    )
 }
 
-pub fn none() -> JsonResponse {
-    JsonResponse{
-        body: json!({}),
-        status_code: StatusCode::OK
-    }
+pub fn none() -> HttpResponse {
+    json_response(
+        StatusCode::OK,
+        json!({})
+    )
 }
 
-pub fn error(e: AppError) -> JsonResponse {
-    JsonResponse {
-        body: json!(
+pub fn error(e: AppError) -> HttpResponse {
+    json_response(
+        e.code().unwrap_or(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR),
+        json!(
 			{
 				"status": "error",
 				"message": format!("{}", e)
 			}
-		),
-        status_code: e.code().unwrap_or(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR)
-    }
+		)
+    )
 }
