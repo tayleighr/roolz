@@ -13,9 +13,7 @@ edition = "2018"
     register_errors = { path = "register_errors" }
 
 	# framework
-    actix-web = "1.0.5"
-    # CORS config
-    actix-cors = "0.1.0"
+    actix-web = "3.3.2"
 
     # db ORM
     diesel = { version = "1.0.0", features = ["postgres", "r2d2", "chrono", "uuid", "serde_json"] }
@@ -34,9 +32,5 @@ edition = "2018"
     # environment config
     dotenv = "0.9.0"
 
-    listenfd = "0.3"
-
     # resource calls
-    reqwest = { version = "0.10.0-alpha.2", features = ["blocking"] }
-
-    yaml-rust = "0.4.5"
+    reqwest = "0.11.0"
