@@ -10,7 +10,9 @@ use {
     crate::error::{AppError, ErrorMeta, ForApp}
 };
 
-pub use diesel::pg::Pg as db_type;
+pub use {
+    diesel::pg::Pg as db_type
+};
 
 
 pub fn db() -> DBPooledConnection {

@@ -7,7 +7,9 @@ use {
     std::fmt
 };
 
-pub use register_errors::register_errors as register_errors;
+pub use {
+    register_errors::register_errors as register_errors
+};
 
 
 pub trait ErrorMeta: std::error::Error {
@@ -23,7 +25,6 @@ pub trait ForApp<T> {
 }
 
 pub type AppResult<T> = std::result::Result<T, AppError>;
-pub type AppResults<T> = std::result::Result<Vec<T>, AppError>;
 
 #[derive(Debug)]
 pub enum AppError {
@@ -115,21 +116,27 @@ impl fmt::Display for AppError {
     }
 }
 
-pub fn not_found(message: &'static str) -> AppError {
-    AppError::New(message, Some(StatusCode::NOT_FOUND))
-}
+pub mod helpers {
+    use actix_web::http::StatusCode;
+    use super::AppError;
 
-pub fn conflict(message: &'static str) -> AppError {
-    AppError::New(message, Some(StatusCode::CONFLICT))
-}
+    pub fn not_found(message: &'static str) -> AppError {
+        AppError::New(message, Some(StatusCode::NOT_FOUND))
+    }
 
-pub fn unprocessable_entity(message: &'static str) -> AppError {
-    AppError::New(message, Some(StatusCode::UNPROCESSABLE_ENTITY))
-}
+    pub fn conflict(message: &'static str) -> AppError {
+        AppError::New(message, Some(StatusCode::CONFLICT))
+    }
 
-pub fn service_unavailable(message: &'static str) -> AppError {
-    AppError::New(message, Some(StatusCode::SERVICE_UNAVAILABLE))
-}
-pub fn internal_server_error(message: &'static str) -> AppError {
-    AppError::New(message, Some(StatusCode::INTERNAL_SERVER_ERROR))
+    pub fn unprocessable_entity(message: &'static str) -> AppError {
+        AppError::New(message, Some(StatusCode::UNPROCESSABLE_ENTITY))
+    }
+
+    pub fn service_unavailable(message: &'static str) -> AppError {
+        AppError::New(message, Some(StatusCode::SERVICE_UNAVAILABLE))
+    }
+
+    pub fn internal_server_error(message: &'static str) -> AppError {
+        AppError::New(message, Some(StatusCode::INTERNAL_SERVER_ERROR))
+    }
 }
