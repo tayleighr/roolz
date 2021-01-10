@@ -1,5 +1,12 @@
-pub use actix_web::http::StatusCode as StatusCode;
-pub use std::fmt;
+use {
+    actix_web::{
+        error::{ResponseError},
+        HttpResponse,
+        http::StatusCode,
+    },
+    std::fmt
+};
+
 pub use register_errors::register_errors as register_errors;
 
 
@@ -89,6 +96,12 @@ impl ErrorMeta for AppError {
     }
 }
 
+impl ResponseError for AppError {
+    fn error_response(&self) -> HttpResponse {
+        crate::view::error(self)
+    }
+}
+
 impl fmt::Display for AppError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
@@ -103,20 +116,20 @@ impl fmt::Display for AppError {
 }
 
 pub fn not_found(message: &'static str) -> AppError {
-    AppError::New(message, Some(actix_web::http::StatusCode::NOT_FOUND))
+    AppError::New(message, Some(StatusCode::NOT_FOUND))
 }
 
 pub fn conflict(message: &'static str) -> AppError {
-    AppError::New(message, Some(actix_web::http::StatusCode::CONFLICT))
+    AppError::New(message, Some(StatusCode::CONFLICT))
 }
 
 pub fn unprocessable_entity(message: &'static str) -> AppError {
-    AppError::New(message, Some(actix_web::http::StatusCode::UNPROCESSABLE_ENTITY))
+    AppError::New(message, Some(StatusCode::UNPROCESSABLE_ENTITY))
 }
 
 pub fn service_unavailable(message: &'static str) -> AppError {
-    AppError::New(message, Some(actix_web::http::StatusCode::SERVICE_UNAVAILABLE))
+    AppError::New(message, Some(StatusCode::SERVICE_UNAVAILABLE))
 }
 pub fn internal_server_error(message: &'static str) -> AppError {
-    AppError::New(message, Some(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR))
+    AppError::New(message, Some(StatusCode::INTERNAL_SERVER_ERROR))
 }
