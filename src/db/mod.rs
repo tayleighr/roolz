@@ -1,16 +1,18 @@
 mod postgres;
 
 use {
-    lazy_static::lazy_static,
     diesel::{
         r2d2::{ Pool, ConnectionManager, PooledConnection},
         pg::PgConnection
     },
     std::env,
-    crate::error::*
+    actix_web::http::StatusCode,
+    crate::error::{AppError, ErrorMeta, ForApp}
 };
 
-pub use diesel::pg::Pg as db_type;
+pub use {
+    diesel::pg::Pg as db_type
+};
 
 
 pub fn db() -> DBPooledConnection {
@@ -25,7 +27,7 @@ struct Handler {
     db_connection: DBPool
 }
 
-lazy_static! {
+lazy_static::lazy_static! {
     static ref HANDLER: Handler = {
         Handler {
             db_connection:
