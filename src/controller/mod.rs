@@ -1,6 +1,6 @@
 pub use serde::{ Serialize, Deserialize };
 pub use actix_web::{ web, Responder};
-pub use super::error::{AppError, AppResult};
+pub use super::error::{AppError, AppResult, helpers::*};
 
 
 #[macro_export]
