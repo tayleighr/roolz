@@ -3,11 +3,11 @@ use {
 };
 
 pub use {
-    actix_web::{web, HttpResponse},
+    actix_web::{ web, HttpResponse },
     serde_json::{ json },
     serde::{ Serialize },
     actix_web::http::StatusCode,
-    crate::error::{AppError, AppResult}
+    crate::error::{ AppError, AppResult, helpers::* }
 };
 
 // use views module and it's dependencies
