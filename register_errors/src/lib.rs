@@ -1,13 +1,13 @@
-#![feature(proc_macro_diagnostic)]
 #[macro_use] extern crate quote;
 extern crate proc_macro;
 extern crate syn;
 
+use proc_macro_error::{proc_macro_error, emit_error};
+
 use {
     syn::{ parse_macro_input, Ident, Fields, Item, Type, ItemEnum, Visibility, AttributeArgs, NestedMeta, Lit, LitInt },
     proc_macro::TokenStream,
-    proc_macro2,
-    syn::spanned::Spanned
+    proc_macro2
 };
 
 type Codes = Vec<LitInt>;
@@ -29,6 +29,7 @@ struct Variant {
 }
 
 #[proc_macro_attribute]
+#[proc_macro_error]
 pub fn register_errors(attrs: TokenStream, input: TokenStream) -> TokenStream {
 
     let parsed_attrs: AttributeArgs = parse_macro_input!(attrs as AttributeArgs);
@@ -39,7 +40,7 @@ pub fn register_errors(attrs: TokenStream, input: TokenStream) -> TokenStream {
     match parsed_error_enum {
         Item::Enum(ref enum_item) => {
 
-            let new_error = new_error(&enum_item, &parsed_attrs, &parsed_error_enum);
+            let new_error = new_error(&enum_item, &parsed_attrs);
             expand_segments.push(new_types(&new_error));
             expand_segments.push(impl_error_status(&new_error));
             expand_segments.push(impl_std_error(&new_error));
@@ -47,7 +48,7 @@ pub fn register_errors(attrs: TokenStream, input: TokenStream) -> TokenStream {
             expand_segments.push(impl_app_error_conversion(&new_error));
             expand_segments.push(impl_variant_conversion(&new_error));
         },
-        _ => parsed_error_enum.span().unstable().error("This is not an enum").emit()
+        _ => emit_error!(proc_macro2::Span::call_site(), "Error set is not an enum")
     };
 
     let expanded = quote!{
@@ -57,9 +58,9 @@ pub fn register_errors(attrs: TokenStream, input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-fn new_error(enum_item: &ItemEnum, parsed_attrs: &AttributeArgs, parsed_enum: &Item) -> NewError {
+fn new_error(enum_item: &ItemEnum, parsed_attrs: &AttributeArgs) -> NewError {
     let name_space = &enum_item.ident;
-    let variants = parse_variants(&enum_item, parsed_attrs, &parsed_enum);
+    let variants = parse_variants(&enum_item, parsed_attrs);
 
     let error_name = proc_macro2::Ident::new(&format!("{:}{:}", name_space, "Error"), proc_macro2::Span::call_site());
     let result_name = proc_macro2::Ident::new(&format!("{:}{:}", name_space, "Result"), proc_macro2::Span::call_site());
@@ -282,14 +283,14 @@ fn impl_variant_conversion(new_error: &NewError) -> proc_macro2::TokenStream {
     }
 }
 
-fn parse_variants(error_enum: &ItemEnum, parsed_attrs: &AttributeArgs, parsed_context: &Item) -> Vec<Variant>{
+fn parse_variants(error_enum: &ItemEnum, parsed_attrs: &AttributeArgs) -> Vec<Variant>{
     let mut variants: Vec<Variant> = Vec::new();
 
     let codes = code_list(&parsed_attrs);
     let mut code_iter = codes.iter();
 
     for variant in &error_enum.variants {
-        if let Some(source) = parse_fields(variant, parsed_context){
+        if let Some(source) = parse_fields(variant){
             let code = if let Some(code) = code_iter.next() {
                 Some(code.to_owned())
             } else {
@@ -321,19 +322,18 @@ fn code_list(parsed_attrs: &AttributeArgs) -> Codes {
     code_list
 }
 
-fn parse_fields(variant: &syn::Variant, parsed_context: &Item) -> Option<Type> {
+fn parse_fields(variant: &syn::Variant) -> Option<Type> {
     match &variant.fields {
         Fields::Unnamed(ref named_fields) => {
             if let Some(source_field) = &named_fields.unnamed.pairs().next() {
                 return Some(source_field.value().ty.clone());
             } else {
-                parsed_context.span().unstable().error("Each variant must define an error type").emit()
+                emit_error!(proc_macro2::Span::call_site(), "Each error variant must define an error type")
             }
         },
-        _=> parsed_context.span().unstable().error("Enum fields must be unnamed").emit()
+        _=> emit_error!(proc_macro2::Span::call_site(), "Error enum fields must be unnamed")
     }
 
-    parsed_context.span().unstable().error("Failed to parse variant fields").emit();
-
+    emit_error!(proc_macro2::Span::call_site(), "Failed to parse error variant fields");
     None
 }

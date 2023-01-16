@@ -7,18 +7,12 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-    #internal proc macros
+
     build_routes = { path = "build_routes" }
-    build_table_model = { path = "build_table_model" }
     register_errors = { path = "register_errors" }
 
 	# framework
-    actix-web = "1.0.5"
-    # CORS config
-    actix-cors = "0.1.0"
-
-    # db ORM
-    diesel = { version = "1.0.0", features = ["postgres", "r2d2", "chrono", "uuid", "serde_json"] }
+    actix-web = "4.2.1"
 
     lazy_static = "1.4.0"
 
@@ -27,8 +21,7 @@ edition = "2018"
     env_logger = "0.7.1"
 
     # serialization of data
-    serde = "1.0"
-    serde_derive = "1.0"
+    serde = {version = "1.0", features = ["derive"]}
     serde_json = "1.0"
 
     # environment config
@@ -39,4 +32,10 @@ edition = "2018"
     # resource calls
     reqwest = { version = "0.10.0-alpha.2", features = ["blocking"] }
 
-    yaml-rust = "0.4.5"
+    # db ORM
+    diesel = { version = "1.0.0", features = ["postgres", "r2d2", "chrono", "uuid", "serde_json"], optional = true }
+    build_table_model = { path = "build_table_model", optional = true }
+
+[features]
+
+    database = ["diesel", 'build_table_model']

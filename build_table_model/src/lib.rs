@@ -1,4 +1,3 @@
-#![feature(proc_macro_diagnostic)]
 #[macro_use] extern crate quote;
 extern crate proc_macro;
 extern crate syn;
@@ -12,7 +11,10 @@ use syn::{
     GenericArgument, PathArguments, Fields, Item, ItemStruct
 };
 
+use proc_macro_error::{proc_macro_error, emit_error};
+
 #[proc_macro_attribute]
+#[proc_macro_error]
 pub fn table_model(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let model: Item = syn::parse(item).expect("failed to parse model struct");
 
@@ -35,8 +37,7 @@ pub fn table_model(_attr: TokenStream, item: TokenStream) -> TokenStream {
             return TokenStream::from(expanded)
 
         },
-            _ => { model.span().unstable().error("This is not a struct").emit()
-        }
+            _ => emit_error!(proc_macro2::Span::call_site(), "This is not a struct")
     };
 
     TokenStream::new()
@@ -54,7 +55,7 @@ fn build_model(model: &ItemStruct, parsed_model: &Item) -> proc_macro2::TokenStr
             }
 
         },
-        _ => { parsed_model.span().unstable().error("The struct must contain only named fields").emit() }
+        _ => emit_error!(proc_macro2::Span::call_site(), "The struct must contain only named fields")
     };
 
     quote!{
@@ -80,12 +81,12 @@ fn build_proxy(model: &ItemStruct, parsed_model: &Item) -> proc_macro2::TokenStr
                     let name = &field.ident;
                     tokenized_fields.push( quote! { #name : Option<#typ>, } );
                 } else {
-                    parsed_model.span().unstable().error("Failed to parse struct types").emit()
+                    emit_error!(proc_macro2::Span::call_site(), "Failed to parse struct types");
                 }
 
             }
         },
-        _ => { parsed_model.span().unstable().error("The struct must contain named fields").emit() }
+        _ => emit_error!(proc_macro2::Span::call_site(), "The struct must contain named fields")
     };
 
     quote!{
@@ -195,14 +196,14 @@ fn extract_type_from_option<'a>(ty: &'a Type, parsed_model: &'a Item) -> Result<
                             GenericArgument::Type(ty) => {
                                 return Ok(&ty)
                             },
-                            _ => { parsed_model.span().unstable().error("Expecting an inner type").emit() }
+                            _ => emit_error!(proc_macro2::Span::call_site(), "Expecting an inner type")
                         }
                     },
                     _ => return Ok(&ty)
                 };
             }
         },
-        _ => { parsed_model.span().unstable().error("Expecting A type definition").emit() }
+        _ => emit_error!(proc_macro2::Span::call_site(), "Expecting A type definition")
     }
 
     Ok(&ty)

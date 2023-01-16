@@ -30,7 +30,7 @@ pub fn from(body: serde_json::Value) -> HttpResponse {
 pub fn json_response(status: StatusCode, body: serde_json::Value) -> HttpResponse {
     HttpResponse::build(status).
         content_type("application/json").
-        body(body)
+        body(body.to_string())
 }
 
 pub fn success(message: &str) -> HttpResponse {

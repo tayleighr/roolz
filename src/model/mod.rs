@@ -4,6 +4,8 @@ pub use {
 };
 
 pub mod resource_model;
+
+#[cfg(feature="database")]
 pub mod table_model;
 
 #[macro_export]
