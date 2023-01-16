@@ -1,7 +1,8 @@
-#![feature(proc_macro_diagnostic)]
 #[macro_use] extern crate quote;
 extern crate proc_macro;
 extern crate syn;
+
+use proc_macro_error::{proc_macro_error, emit_error};
 
 use {
     syn::{parse_macro_input, parenthesized, braced, Path, LitStr, Ident, token},
@@ -11,6 +12,7 @@ use {
 };
 
 #[proc_macro]
+#[proc_macro_error]
 pub fn build_routes(input: TokenStream) -> TokenStream {
     let root: RouteTree = parse_macro_input!(input as RouteTree);
     let method_chain: proc_macro2::TokenStream = build_method_chain(root.scopes);
@@ -55,7 +57,7 @@ impl Parse for RouteTree {
             if let Ok(scp) = parse_scope(path, &within_scope) {
                 scopes.push( scp );
             } else {
-                within_scope.span().unstable().error("The the scope is malformatted here").emit()
+                emit_error!(proc_macro2::Span::call_site(), "Malformatted route scope")
             }
         }
 
@@ -86,7 +88,7 @@ fn parse_scope(path: LitStr, stream: ParseStream) -> Result<Scope> {
             if let Ok(scp) = parse_scope(path, &within_scope) {
                 scopes.push( scp);
             } else {
-                within_scope.span().unstable().error("The the scope is malformatted here").emit()
+                emit_error!(proc_macro2::Span::call_site(), "Malformatted route scope")
             }
 
         } else {

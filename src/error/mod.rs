@@ -41,10 +41,6 @@ impl AppError {
 impl std::error::Error for AppError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         None
-//        match *self {
-//            AppError::New( _,_ ) => None,
-//            AppError::From(ref e) => Some(e) // don't have a size known at compile time
-//        }
     }
 }
 

@@ -3,11 +3,11 @@ use {
 };
 
 pub use {
-    actix_web::{web, HttpResponse},
+    actix_web::{ web, HttpResponse },
     serde_json::{ json },
     serde::{ Serialize },
     actix_web::http::StatusCode,
-    crate::error::{AppError, AppResult}
+    crate::error::{ AppError, AppResult, helpers::* }
 };
 
 // use views module and it's dependencies
@@ -30,7 +30,7 @@ pub fn from(body: serde_json::Value) -> HttpResponse {
 pub fn json_response(status: StatusCode, body: serde_json::Value) -> HttpResponse {
     HttpResponse::build(status).
         content_type("application/json").
-        body(body)
+        body(body.to_string())
 }
 
 pub fn success(message: &str) -> HttpResponse {
